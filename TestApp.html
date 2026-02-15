@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Master - Testing Learning Platform</title>
+    <script src="apiKey.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar for Sidebar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+
+        /* Basic Prose Styling for Dynamic HTML Content */
+        .prose h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #60a5fa; }
+        .prose h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #f8fafc; }
+        .prose p { margin-bottom: 1rem; line-height: 1.75; color: #cbd5e1; }
+        .prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #cbd5e1; }
+        .prose li { margin-bottom: 0.5rem; }
+        .prose strong { color: #f1f5f9; font-weight: 600; }
+        .prose pre { background-color: #020617; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; border: 1px solid #1e293b; }
+        .prose code { font-family: monospace; color: #93c5fd; font-size: 0.9em; }
+        
+        /* Animation Utilities */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONS (SVG Components) ---
+        const Icon = ({ path, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Home: (props) => <Icon {...props} path={<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>} />,
+            BookOpen: (props) => <Icon {...props} path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />,
+            CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
+            Code: (props) => <Icon {...props} path={<><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>} />,
+            ChevronRight: (props) => <Icon {...props} path={<polyline points="9 18 15 12 9 6"/>} />,
+            Menu: (props) => <Icon {...props} path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} />,
+            X: (props) => <Icon {...props} path={<><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></>} />,
+            Terminal: (props) => <Icon {...props} path={<><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></>} />,
+            CheckSquare: (props) => <Icon {...props} path={<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>} />,
+            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/></>} />,
+            Loader: (props) => <Icon {...props} className={`animate-spin ${props.className || ''}`} path={<><path d="M21 12a9 9 0 1 1-6.219-8.56"/></>} />,
+            RefreshCw: (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></>} />,
+            GraduationCap: (props) => <Icon {...props} path={<><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></>} />
+        };
+
+    
+        const apiKey =window.apiKey; // Set by environment
+
+        // --- DATA: CURRICULUM ---
+        const curriculumData = [
+          {
+            phase: "Phase 1: Manual Testing Fundamentals (Days 1-10)",
+            days: [
+              {
+                id: 1,
+                title: "Introduction to Software Testing",
+                content: `
+                  <h2>What is Software Testing?</h2>
+                  <p>Software testing is a process to evaluate the functionality of a software application with an intent to find whether the developed software met the specified requirements or not.</p>
+                  <h3>Why is Testing Important?</h3>
+                  <ul>
+                    <li><strong>Cost Saving:</strong> Fixing bugs early costs less.</li>
+                    <li><strong>Security:</strong> Identifies vulnerabilities.</li>
+                    <li><strong>Product Quality:</strong> Ensures the product delivers on promises.</li>
+                  </ul>
+                `,
+                assignment: "Research a major software failure (e.g., Y2K, Ariane 5) and explain how testing could have prevented it."
+              },
+              { 
+                id: 2, 
+                title: "SDLC Models: Waterfall & V-Model", 
+                content: "The <strong>Software Development Life Cycle (SDLC)</strong> describes the stages of software creation. The <strong>Waterfall Model</strong> is a linear approach where each phase must be completed before the next begins, often making it rigid. In contrast, the <strong>V-Model (Verification and Validation)</strong> pairs each development phase with a corresponding testing phase, ensuring testing starts early in the lifecycle.", 
+                assignment: "Draw a V-Model diagram and label the testing phases." 
+              },
+              { 
+                id: 3, 
+                title: "Agile & Scrum Methodology", 
+                content: "<strong>Agile</strong> is an iterative approach that focuses on flexibility, customer collaboration, and delivering small, working pieces of software frequently. <strong>Scrum</strong> is a popular Agile framework that organizes work into short cycles called <strong>Sprints</strong> (usually 2 weeks), managed by roles like the Scrum Master and Product Owner.", 
+                assignment: "Write user stories for a Login feature." 
+              },
+              { 
+                id: 4, 
+                title: "Testing Types: Functional vs Non-Functional", 
+                content: "<strong>Functional Testing</strong> verifies <em>what</em> the system does (e.g., can I login?). <strong>Non-Functional Testing</strong> validates <em>how</em> the system performs (e.g., does the login take less than 2 seconds?). Key non-functional types include Performance, Load, Security, and Usability testing.", 
+                assignment: "List 5 functional and 5 non-functional scenarios for an ATM." 
+              },
+              { 
+                id: 5, 
+                title: "Black Box vs White Box Testing", 
+                content: "<strong>Black Box Testing</strong> involves testing the application's functionality without knowing the internal code structure; you focus on inputs and outputs. <strong>White Box Testing</strong> requires knowledge of the code, logic, and structure, often performed by developers (Unit Testing).", 
+                assignment: "Explain Boundary Value Analysis with an example." 
+              },
+              { 
+                id: 6, 
+                title: "STLC: Requirement Analysis & Planning", 
+                content: "The <strong>Software Testing Life Cycle (STLC)</strong> begins with <strong>Requirement Analysis</strong>, where QA identifies what to test. The next step is <strong>Test Planning</strong>, a crucial phase where the strategy, scope, resources, and schedule are defined in a Test Plan document.", 
+                assignment: "Draft a simple Test Plan for a calculator app." 
+              },
+              { 
+                id: 7, 
+                title: "Test Case Design Techniques", 
+                content: "To write efficient test cases, we use techniques like <strong>Equivalence Partitioning</strong> (grouping inputs to reduce test counts) and <strong>Boundary Value Analysis</strong> (testing edge cases like min/max values). <strong>Decision Tables</strong> are used for testing complex business logic with multiple conditions.", 
+                assignment: "Create a decision table for a credit card application logic." 
+              },
+              { 
+                id: 8, 
+                title: "Writing Effective Test Cases", 
+                content: "A <strong>Test Case</strong> is a set of actions executed to verify a feature. It must include a unique ID, Description, Pre-conditions, Test Steps, Test Data, Expected Result, and Actual Result. Writing clear, reproducible steps is the hallmark of a good QA engineer.", 
+                assignment: "Write 10 test cases for the Gmail Login page." 
+              },
+              { 
+                id: 9, 
+                title: "Defect Life Cycle & Management", 
+                content: "A <strong>Defect (Bug)</strong> follows a lifecycle: New -> Assigned -> Open -> Fixed -> Retest -> Closed. If a fix fails, it is Reopened. Defect management involves reporting bugs with proper severity (impact) and priority (urgency) using tools like Jira.", 
+                assignment: "Simulate a bug report in a text file with screenshots." 
+              },
+              { 
+                id: 10, 
+                title: "Phase 1 Recap & Mock Project", 
+                content: "This module consolidates all manual testing concepts. You will apply SDLC knowledge, design test cases using BVA/EP, and execute them on a demo application to practice the full STLC flow before moving to automation.", 
+                assignment: "Execute your test cases from Day 8 on a real browser." 
+              }
+            ]
+          },
+          {
+            phase: "Phase 2: Java Essentials (Days 11-15)",
+            days: [
+              { id: 11, title: "Java Environment Setup & Syntax", content: "Automation requires a programming language. We start with <strong>Java</strong>. You need to install the JDK (Java Development Kit) and an IDE like Eclipse or IntelliJ. We cover basic syntax: variables, data types (int, string, boolean), and operators.", assignment: "Write a Java program to swap two numbers without a temp variable." },
+              { id: 12, title: "Control Flow: Loops & Conditions", content: "Logic is built using control flow. <strong>Conditional statements</strong> (if-else, switch) decide what code runs. <strong>Loops</strong> (for, while, do-while) allow you to repeat actions, which is essential for data-driven testing.", assignment: "Print a Fibonacci series up to 100." },
+              { id: 13, title: "OOPs Part 1: Classes & Objects", content: "Java is an Object-Oriented language. A <strong>Class</strong> is a blueprint, and an <strong>Object</strong> is an instance of that class. You will learn about Methods (behavior) and Variables (state).", assignment: "Create a 'Car' class with attributes and methods." },
+              { id: 14, title: "OOPs Part 2: Inheritance & Polymorphism", content: "<strong>Inheritance</strong> allows a class to acquire properties of another, crucial for creating a BaseTest class in automation. <strong>Polymorphism</strong> (Overloading/Overriding) allows methods to perform different tasks based on context.", assignment: "Implement a 'Shape' class hierarchy." },
+              { id: 15, title: "Collections & Exception Handling", content: "The <strong>Collections Framework</strong> (ArrayList, HashMap) helps manage groups of objects dynamically. <strong>Exception Handling</strong> (try-catch) prevents your automation scripts from crashing unexpectedly.", assignment: "Create a student database using HashMap." }
+            ]
+          },
+          {
+            phase: "Phase 3: Selenium WebDriver (Days 16-25)",
+            days: [
+              {
+                id: 16,
+                title: "Selenium Architecture & First Script",
+                content: `
+                  <h2>Getting Started</h2>
+                  <p>Selenium WebDriver is a collection of APIs used to automate web application testing.</p>
+                  <pre><code>WebDriver driver = new ChromeDriver();\ndriver.get("https://google.com");</code></pre>
+                `,
+                assignment: "Setup project and launch Chrome browser programmatically."
+              },
+              { id: 17, title: "Locators Strategy", content: "Locators are the backbone of Selenium. They tell WebDriver which HTML element to interact with. Common strategies include ID, Name, ClassName, and LinkText.", assignment: "Identify all locators on a registration form." },
+              { id: 18, title: "XPath & CSS Selectors", content: "When standard locators aren't enough, we use <strong>XPath</strong> and <strong>CSS Selectors</strong>. Learn about Absolute vs Relative XPath, and how to traverse the DOM using axes (parent, child, following-sibling).", assignment: "Write 5 complex XPaths for dynamic elements." },
+              { id: 19, title: "Handling WebElements", content: "Learn to interact with different UI elements: <code>sendKeys()</code> for Input boxes, <code>click()</code> for Buttons/Radio/Checkboxes, and <code>getText()</code> to validate content.", assignment: "Automate a form submission flow." },
+              { id: 20, title: "Synchronization (Waits)", content: "Scripts often fail because the browser is slower than the code. <strong>Waits</strong> solve this. Learn <strong>Implicit Wait</strong> (global) vs <strong>Explicit Wait</strong> (conditional) to make scripts robust.", assignment: "Fix a 'NoSuchElement' exception using Explicit Wait." },
+              { id: 21, title: "Dropdowns & Alerts", content: "Special handling is required for <strong>Dropdowns</strong> (using the Select class) and JavaScript <strong>Alerts/Popups</strong> (using <code>driver.switchTo().alert()</code>).", assignment: "Handle a JavaScript alert and a multi-select dropdown." },
+              { id: 22, title: "Frames & Windows", content: "Modern apps use <strong>iFrames</strong> and multiple tabs. Selenium requires you to switch context using <code>switchTo().frame()</code> or <code>switchTo().window()</code> before interacting with elements inside them.", assignment: "Switch between parent and child windows." },
+              { id: 23, title: "Actions Class (Mouse/Keyboard)", content: "The <strong>Actions Class</strong> handles advanced user interactions like Mouse Hover, Double Click, Right Click (Context Click), and Drag-and-Drop operations.", assignment: "Automate a drag-and-drop feature." },
+              { id: 24, title: "Web Tables", content: "Data is often presented in tables. Learn to iterate through rows (<code>tr</code>) and columns (<code>td</code>) to find specific data in static and dynamic HTML tables.", assignment: "Extract data from a specific cell in a table." },
+              { id: 25, title: "Selenium Recap & Mini Project", content: "This milestone involves combining all Selenium concepts (Locators, Waits, Actions) to automate an end-to-end flow, such as booking a flight or purchasing an item.", assignment: "Automate an end-to-end flight booking flow." }
+            ]
+          },
+          {
+            phase: "Phase 4: TestNG Framework (Days 26-30)",
+            days: [
+              { id: 26, title: "TestNG Annotations", content: "TestNG controls test execution. Annotations like <code>@Test</code>, <code>@BeforeMethod</code>, and <code>@AfterClass</code> define the flow and setup/teardown logic.", assignment: "Convert a main() method script to TestNG." },
+              { id: 27, title: "Assertions & Dependencies", content: "<strong>Assertions</strong> (Hard vs Soft) validate actual vs expected results. <strong>Dependencies</strong> (<code>dependsOnMethods</code>) allow you to chain tests (e.g., Login must pass before Search).", assignment: "Validate page title and login success using Assertions." },
+              { id: 28, title: "TestNG XML & Grouping", content: "The <strong>testng.xml</strong> file acts as a control center, allowing you to run specific suites, include/exclude groups (Smoke/Regression), and manage parameters.", assignment: "Run only 'Sanity' tests using XML." },
+              { id: 29, title: "Data Driven Testing (DataProvider)", content: "Run the same test logic with multiple data sets (e.g., valid/invalid logins) using the <code>@DataProvider</code> annotation. This is key for coverage.", assignment: "Test login with 5 different user/pass combinations." },
+              { id: 30, title: "Parallel Execution & Reporting", content: "Speed up execution by running tests in parallel (multi-threading) across classes or methods. Also, learn to generate HTML reports for stakeholders.", assignment: "Run tests in parallel on Chrome and Firefox." }
+            ]
+          },
+          {
+            phase: "Phase 5: Cucumber BDD (Days 31-35)",
+            days: [
+              { id: 31, title: "Introduction to BDD & Gherkin", content: "<strong>Behavior Driven Development (BDD)</strong> bridges the gap between technical and non-technical teams using <strong>Gherkin</strong> syntax (Given-When-Then) in Feature files.", assignment: "Write a Feature file for a Search function." },
+              { id: 32, title: "Step Definitions & Test Runner", content: "Feature files are plain text. <strong>Step Definitions</strong> bind the Gherkin steps to Java code. The <strong>Test Runner</strong> class triggers the execution.", assignment: "Map your Feature file to Java methods." },
+              { id: 33, title: "Scenario Outline & Hooks", content: "<strong>Scenario Outline</strong> allows data-driven testing in Cucumber. <strong>Hooks</strong> (<code>@Before</code>, <code>@After</code>) handle setup and teardown logic similar to TestNG annotations.", assignment: "Use Scenario Outline for multiple search terms." },
+              { id: 34, title: "Tags & Background", content: "<strong>Tags</strong> (e.g., @Smoke) help filter which scenarios to run. <strong>Background</strong> steps define common preconditions (like logging in) for all scenarios in a feature.", assignment: "Group Smoke tests using Tags." },
+              { id: 35, title: "Reporting in Cucumber", content: "Learn to generate readable reports (HTML, JSON) that clearly show which Gherkin steps passed or failed, essential for BDD transparency.", assignment: "Generate a readable HTML report for your execution." }
+            ]
+          },
+          {
+            phase: "Phase 6: Framework Design (Days 36-40)",
+            days: [
+              { id: 36, title: "Page Object Model (POM) Concept", content: "<strong>POM</strong> is a design pattern that creates an object repository for web UI elements. It separates the Page locators from the Test logic, improving maintenance.", assignment: "Design a Page Class for a Login Page." },
+              { id: 37, title: "Hybrid Framework Structure", content: "A <strong>Hybrid Framework</strong> combines the best of Data-Driven, Keyword-Driven, and POM approaches. We structure the project with standard folders (src/main, src/test).", assignment: "Set up the folder structure (src/main, src/test)." },
+              { id: 38, title: "Utilities & Base Class", content: "Reusable components are key. Create <strong>Utilities</strong> for reading Config files (Properties), Excel data, and a <strong>BaseClass</strong> to initialize/close WebDriver.", assignment: "Create a detailed config.properties reader." },
+              { id: 39, title: "CI/CD Integration (Jenkins/Git)", content: "Automation isn't complete without <strong>CI/CD</strong>. Push code to <strong>Git</strong> and configure <strong>Jenkins</strong> to run tests automatically on every code commit or nightly.", assignment: "Push code to GitHub and create a Jenkins job." },
+              { id: 40, title: "Final Framework Walkthrough", content: "The final day reviews the end-to-end architecture of the framework you built, ensuring you can explain every component (POM, Utils, Reporting) in an interview.", assignment: "Present your Hybrid Framework." }
+            ]
+          }
+        ];
+
+        // --- COMPONENTS ---
+
+        const Navigation = ({ activeDay, view, onNavigate, isSidebarOpen, toggleSidebar, completedDays = [] }) => (
+            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
+                    <div className="flex items-center gap-2 font-bold text-xl text-blue-400">
+                        <Icons.Terminal size={24} />
+                        <span>QA Master</span>
+                    </div>
+                    {/* Hide Button */}
+                    <button onClick={toggleSidebar} className="text-slate-400 hover:text-white transition-colors" title="Hide Menu">
+                        <Icons.X size={24} />
+                    </button>
+                </div>
+                
+                <div className="overflow-y-auto flex-1 p-4">
+                    {curriculumData.map((phase, pIndex) => (
+                        <div key={pIndex} className="mb-6">
+                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3 sticky top-0 bg-slate-900 py-1 z-10">{phase.phase}</h3>
+                            <div className="space-y-1">
+                                {phase.days.map((day) => (
+                                    <button
+                                        key={day.id}
+                                        onClick={() => { onNavigate('day', day); if(window.innerWidth < 768) toggleSidebar(); }}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-between group ${
+                                            view === 'day' && activeDay?.id === day.id 
+                                                ? 'bg-blue-600/20 text-blue-300 border border-blue-600/30' 
+                                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            {completedDays.includes(day.id) && (
+                                                <Icons.CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+                                            )}
+                                            <span className="truncate">Day {day.id}: {day.title.split(":")[0]}</span>
+                                        </div>
+                                        {view === 'day' && activeDay?.id === day.id && <Icons.ChevronRight size={14} />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const HomeDashboard = ({ curriculumData, completedDays, onNavigate }) => {
+            const totalDays = curriculumData.reduce((acc, phase) => acc + phase.days.length, 0);
+            const progress = Math.round((completedDays.length / totalDays) * 100);
+
+            return (
+                <div className="max-w-6xl mx-auto pb-20 animate-fade-in pt-8">
+                    {/* Header & Progress */}
+                    <div className="mb-12 bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-2xl border border-slate-700 shadow-xl">
+                        <h1 className="text-3xl font-bold text-white mb-6">Mastering QA & Automation</h1>
+                        <h1 className="text-3xl font-bold text-white mb-6">Welcome Back, Future QA Expert!</h1>
+                        
+                        <div className="bg-slate-950/50 p-6 rounded-xl border border-slate-700">
+                            <div className="flex justify-between items-end mb-2">
+                                <div>
+                                    <p className="text-sm text-slate-400 mb-1">Total Progress</p>
+                                    <p className="text-2xl font-bold text-white">{progress}% Completed</p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-sm font-mono text-blue-400 bg-blue-400/10 px-2 py-1 rounded">{completedDays.length} / {totalDays} Modules</span>
+                                </div>
+                            </div>
+                            <div className="w-full bg-slate-800 rounded-full h-4 overflow-hidden shadow-inner">
+                                <div 
+                                    className="bg-gradient-to-r from-blue-600 to-purple-600 h-full transition-all duration-1000 ease-out relative" 
+                                    style={{ width: `${progress}%` }}
+                                >
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Phases Grid */}
+                    <div className="space-y-12">
+                        {curriculumData.map((phase, i) => {
+                            const phaseCompletedCount = phase.days.filter(d => completedDays.includes(d.id)).length;
+                            const phaseTotal = phase.days.length;
+                            const isPhaseDone = phaseCompletedCount === phaseTotal;
+
+                            return (
+                                <div key={i}>
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <h3 className="text-xl font-bold text-slate-200">{phase.phase}</h3>
+                                        <div className="h-px flex-1 bg-slate-800"></div>
+                                        <span className={`text-xs font-bold px-2 py-1 rounded ${isPhaseDone ? 'bg-green-500/10 text-green-400' : 'bg-slate-800 text-slate-500'}`}>
+                                            {phaseCompletedCount}/{phaseTotal} Done
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                        {phase.days.map(day => {
+                                            const isDone = completedDays.includes(day.id);
+                                            return (
+                                                <button
+                                                    key={day.id}
+                                                    onClick={() => onNavigate(day)}
+                                                    className={`group p-5 rounded-xl border text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col h-full ${
+                                                        isDone
+                                                        ? 'bg-slate-900/40 border-green-900/30 hover:bg-slate-900/60 hover:border-green-500/50'
+                                                        : 'bg-slate-800 border-slate-700 hover:border-blue-500/50 hover:bg-slate-800/80'
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-start mb-3 w-full">
+                                                        <span className={`text-xs font-bold uppercase tracking-wider py-1 px-2 rounded ${isDone ? 'bg-green-500/10 text-green-400' : 'bg-slate-900 text-slate-500'}`}>
+                                                            Day {day.id}
+                                                        </span>
+                                                        {isDone ? (
+                                                            <Icons.CheckCircle size={18} className="text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                                        ) : (
+                                                            <div className="w-4 h-4 rounded-full border-2 border-slate-600 group-hover:border-blue-400 transition-colors"></div>
+                                                        )}
+                                                    </div>
+                                                    <h4 className={`font-semibold mb-2 line-clamp-2 ${isDone ? 'text-slate-400' : 'text-slate-100 group-hover:text-blue-300'}`}>
+                                                        {day.title.split(":")[0]}
+                                                    </h4>
+                                                    <div className="mt-auto pt-4 text-xs text-slate-500 group-hover:text-slate-400 truncate">
+                                                        {day.title.includes(":") ? day.title.split(":")[1] : "Click to start learning"}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const AILessonGenerator = ({ day }) => {
+            const [content, setContent] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            // Effect to clear content when switching days so the "Generate" view appears
+            useEffect(() => {
+                setContent(null);
+            }, [day]);
+
+            const generateLesson = async () => {
+                setLoading(true);
+                setError(null);
+
+                const promptText = `
+                  Act as an expert Software Testing Instructor. 
+                  Generate a comprehensive, detailed study module for the topic: "${day.title}".
+                  
+                  Structure the response in HTML format (using <h2>, <h3>, <p>, <ul>, <pre><code> for code). 
+                  
+                  Include the following sections:
+                  1. **Introduction**: A clear definition.
+                  2. **Key Concepts**: Detailed explanation of the theory.
+                  3. **Practical Example**: 
+                     - If Manual Testing: A real-world scenario. 
+                     - If Automation/Java: Provide a clean, commented Code Snippet.
+                  4. **Best Practices**: What to do and what to avoid.
+                  5. **Interview Question**: One common interview question related to this topic with the answer.
+                  
+                  Make it engaging and educational. Do not markdown the HTML, return raw HTML string.
+                `;
+
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: promptText }] }]
+                            })
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('Failed to fetch from AI');
+
+                    const data = await response.json();
+                    let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    text = text.replace(/```html/g, '').replace(/```/g, '').trim();
+                    setContent(text);
+                } catch (err) {
+                    console.error(err);
+                    setError("Unable to generate lesson plan at the moment. Please try again.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex flex-col items-center justify-center py-24 bg-slate-900/50 rounded-xl border border-slate-800">
+                        <Icons.Loader className="animate-spin text-blue-400 mb-6" size={48} />
+                        <h3 className="text-xl font-bold text-white mb-2">Building Your Lesson Plan...</h3>
+                        <p className="text-slate-400">Consulting industry experts & gathering examples</p>
+                    </div>
+                );
+            }
+
+            if (!content) {
+                return (
+                    <div className="space-y-8 animate-fade-in">
+                        {/* 1. Static Topic Overview (Always Visible initially) */}
+                        <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800">
+                             <div className="flex items-center gap-2 mb-4">
+                                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                                    <Icons.BookOpen size={20} />
+                                </div>
+                                <h3 className="text-lg font-bold text-white">Topic Overview</h3>
+                             </div>
+                             {/* Render as HTML since we updated curriculumData to contain HTML strings */}
+                             <div className="prose text-slate-300 text-lg leading-relaxed max-w-none">
+                                <div dangerouslySetInnerHTML={{ __html: day.content }} />
+                             </div>
+                        </div>
+
+                        {/* 2. Call to Action for Deep Dive */}
+                        <div className="flex flex-col items-center justify-center py-10 bg-slate-800/50 rounded-xl border border-slate-700 border-dashed hover:border-blue-500/50 transition-colors">
+                             <div className="w-14 h-14 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+                                <Icons.Sparkles className="text-purple-400" size={28} />
+                             </div>
+                             <h4 className="text-white font-semibold mb-2 text-lg">Detailed AI Lesson</h4>
+                             <p className="text-slate-400 text-sm mb-6 max-w-md text-center">
+                                Need more depth? Generate a comprehensive study module with definitions, code examples, and interview questions.
+                             </p>
+                             <button 
+                                onClick={generateLesson}
+                                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 flex items-center gap-3"
+                            >
+                                <Icons.Sparkles size={20} /> 
+                                Generate Detailed Lesson
+                            </button>
+                            {error && <p className="mt-4 text-red-400 text-sm bg-red-900/20 px-4 py-2 rounded-lg">{error}</p>}
+                        </div>
+                    </div>
+                );
+            }
+
+            // View when content IS generated
+            return (
+                <div className="animate-fade-in">
+                    {/* Keep the overview visible even after generation, but maybe smaller or just show the generated content? 
+                        User asked for "below that add Generate button", implying they want the overview to stay. 
+                        But once generated, we replace the whole view with the Full Lesson. 
+                        Let's just show the full lesson as it is comprehensive. 
+                    */}
+                    <div className="prose max-w-none">
+                         <div className="mb-8 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg text-blue-200 text-sm">
+                            <span className="font-bold">Note:</span> This is AI-generated content.
+                         </div>
+                        <div dangerouslySetInnerHTML={{ __html: content }} />
+                    </div>
+                    
+                    <div className="mt-12 pt-6 border-t border-slate-800 flex justify-center">
+                        <button 
+                            onClick={generateLesson}
+                            className="text-sm text-slate-500 hover:text-blue-400 flex items-center gap-2 transition-colors"
+                        >
+                            <Icons.RefreshCw size={14} /> Regenerate Lesson Content
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const AIQuizGenerator = ({ day }) => {
+            const [questions, setQuestions] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [answers, setAnswers] = useState({});
+            const [submitted, setSubmitted] = useState(false);
+            const [score, setScore] = useState(0);
+
+            useEffect(() => {
+                setQuestions([]);
+                setLoading(false);
+                setError(null);
+                setAnswers({});
+                setSubmitted(false);
+                setScore(0);
+            }, [day]);
+
+            const generateQuiz = async () => {
+                setLoading(true);
+                setError(null);
+
+                const promptText = `
+                  Create 3 multiple-choice questions (MCQs) for a software testing student.
+                  Topic: "${day.title}".
+                  
+                  Return ONLY a raw JSON object (no markdown formatting, no code blocks) with this structure:
+                  {
+                    "questions": [
+                      {
+                        "question": "Question text here",
+                        "options": ["Option A", "Option B", "Option C", "Option D"],
+                        "correct": 0  // index of correct option (0-3)
+                      }
+                    ]
+                  }
+                `;
+
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: promptText }] }]
+                            })
+                        }
+                    );
+
+                    if (!response.ok) throw new Error('Failed to fetch from AI');
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    const jsonString = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const parsedData = JSON.parse(jsonString);
+
+                    if (parsedData.questions && Array.isArray(parsedData.questions)) {
+                        setQuestions(parsedData.questions);
+                    } else {
+                        throw new Error('Invalid quiz format');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    setError("AI is busy or unavailable. Please try again.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleSelect = (qIndex, oIndex) => {
+                if (submitted) return;
+                setAnswers(prev => ({ ...prev, [qIndex]: oIndex }));
+            };
+
+            const handleSubmit = () => {
+                let newScore = 0;
+                questions.forEach((q, idx) => {
+                    if (answers[idx] === q.correct) newScore++;
+                });
+                setScore(newScore);
+                setSubmitted(true);
+            };
+
+            if (!questions.length && !loading) {
+                return (
+                    <div className="flex flex-col items-center justify-center py-12 bg-slate-800 rounded-xl border border-slate-700 mt-6 text-center px-4">
+                        <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+                            <Icons.Sparkles className="text-blue-400" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">AI Quiz Generator</h3>
+                        <p className="text-slate-400 mb-6 max-w-md">
+                            Test your knowledge on <strong>{day.title}</strong>. 
+                            The AI will generate unique questions for you instantly.
+                        </p>
+                        <button 
+                            onClick={generateQuiz}
+                            className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 flex items-center gap-2"
+                        >
+                            <Icons.Sparkles size={18} /> Generate Quiz
+                        </button>
+                        {error && <p className="mt-4 text-red-400 text-sm bg-red-900/20 px-3 py-1 rounded">{error}</p>}
+                    </div>
+                );
+            }
+
+            if (loading) {
+                return (
+                    <div className="flex flex-col items-center justify-center py-20 bg-slate-800 rounded-xl border border-slate-700 mt-6">
+                        <Icons.Loader className="animate-spin text-blue-400 mb-4" size={32} />
+                        <p className="text-slate-300 animate-pulse">Consulting the AI Oracle...</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 mt-6">
+                    <div className="flex justify-between items-start mb-6">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Icons.Sparkles className="text-blue-400" /> AI Generated Quiz
+                        </h3>
+                        <button onClick={generateQuiz} title="Regenerate" className="text-slate-500 hover:text-white transition-colors">
+                            <Icons.RefreshCw size={18} />
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-8">
+                        {questions.map((q, idx) => (
+                            <div key={idx} className="animate-fade-in" style={{animationDelay: `${idx * 100}ms`}}>
+                                <p className="text-slate-100 font-medium mb-4 text-lg">{idx + 1}. {q.question}</p>
+                                <div className="space-y-2">
+                                    {q.options.map((opt, oIdx) => {
+                                        let btnClass = "w-full text-left p-4 rounded-lg border transition-all text-sm font-medium ";
+                                        if (submitted) {
+                                            if (oIdx === q.correct) btnClass += "bg-green-500/20 border-green-500/50 text-green-300";
+                                            else if (answers[idx] === oIdx) btnClass += "bg-red-500/20 border-red-500/50 text-red-300";
+                                            else btnClass += "bg-slate-900 border-slate-800 text-slate-500 opacity-50";
+                                        } else {
+                                            if (answers[idx] === oIdx) btnClass += "bg-blue-600 border-blue-500 text-white shadow-md";
+                                            else btnClass += "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600 hover:bg-slate-800";
+                                        }
+
+                                        return (
+                                            <button
+                                                key={oIdx}
+                                                onClick={() => handleSelect(idx, oIdx)}
+                                                className={btnClass}
+                                            >
+                                                {opt}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {!submitted ? (
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={Object.keys(answers).length !== questions.length}
+                            className="mt-8 w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-blue-500/20"
+                        >
+                            Submit Answers
+                        </button>
+                    ) : (
+                        <div className="mt-8 p-6 bg-slate-900 rounded-xl border border-slate-800 text-center animate-fade-in">
+                            <p className="text-slate-400 mb-1 uppercase tracking-wider text-xs font-bold">Result</p>
+                            <div className="text-4xl font-black text-white mb-2">{score} <span className="text-slate-600 text-2xl">/</span> {questions.length}</div>
+                            <p className={`text-sm font-medium ${score === questions.length ? "text-green-400" : "text-yellow-400"}`}>
+                                {score === questions.length ? "Perfect Score! You're a Master!" : "Good effort, keep learning!"}
+                            </p>
+                            <button 
+                                onClick={() => { setSubmitted(false); setAnswers({}); setScore(0); generateQuiz(); }}
+                                className="mt-4 text-blue-400 text-sm hover:text-white transition-colors underline decoration-blue-400/30"
+                            >
+                                Generate New Questions
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const MainContent = ({ day, activeTab, setActiveTab, isCompleted, onToggleCompletion }) => {
+            if (!day) return <div className="p-8 text-slate-500">Select a day to begin learning.</div>;
+
+            return (
+                <div className="max-w-4xl mx-auto w-full pb-20 pt-16 md:pt-4">
+                    <div className="mb-8">
+                        <div className="flex items-center gap-2 text-blue-400 mb-2 text-xs font-bold uppercase tracking-wider bg-blue-500/10 w-fit px-3 py-1 rounded-full">
+                            <span>Day {day.id}</span>
+                        </div>
+                        <h1 className="text-2xl md:text-4xl font-bold text-white mb-6 leading-tight">{day.title}</h1>
+                        
+                        <div className="flex border-b border-slate-800 overflow-x-auto">
+                            <button
+                                onClick={() => setActiveTab('learn')}
+                                className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'learn' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <div className="flex items-center gap-2"><Icons.BookOpen size={18} /> Learn</div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('quiz')}
+                                className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'quiz' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <div className="flex items-center gap-2"><Icons.Sparkles size={18} /> AI Quiz</div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('assign')}
+                                className={`px-6 py-4 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'assign' ? 'border-green-500 text-green-400' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                            >
+                                <div className="flex items-center gap-2"><Icons.Code size={18} /> Assignment</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="animate-fade-in min-h-[400px]">
+                        {activeTab === 'learn' && (
+                           <AILessonGenerator day={day} />
+                        )}
+
+                        {activeTab === 'quiz' && (
+                           <AIQuizGenerator day={day} />
+                        )}
+
+                        {activeTab === 'assign' && (
+                            <div className={`bg-slate-800 rounded-xl p-8 border ${isCompleted ? 'border-green-500/50' : 'border-slate-700'} border-l-4 border-l-green-500 shadow-xl transition-all`}>
+                                <h3 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <Icons.Code className="text-green-400" /> Daily Task
+                                </h3>
+                                <p className="text-lg text-slate-300 leading-relaxed mb-6 font-mono bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
+                                    {day.assignment}
+                                </p>
+                                <div className="flex items-center gap-3 text-sm text-slate-500 italic mb-8">
+                                   <Icons.CheckSquare size={16} />
+                                   <span>Complete this task in your local environment.</span>
+                                </div>
+                                <button 
+                                    onClick={onToggleCompletion}
+                                    className={`px-6 py-3 font-medium rounded-lg transition-colors flex items-center gap-2 shadow-lg ${
+                                        isCompleted 
+                                        ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 ring-1 ring-green-500/50' 
+                                        : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
+                                    }`}
+                                >
+                                    <Icons.CheckCircle size={18} /> 
+                                    {isCompleted ? "Completed" : "Mark as Complete"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('home'); // 'home' or 'day'
+            const [activeDay, setActiveDay] = useState(curriculumData[0].days[0]);
+            const [activeTab, setActiveTab] = useState('learn');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+            const [completedDays, setCompletedDays] = useState([]);
+
+            const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+            const toggleCompletion = () => {
+                if (completedDays.includes(activeDay.id)) {
+                    setCompletedDays(prev => prev.filter(id => id !== activeDay.id));
+                } else {
+                    setCompletedDays(prev => [...prev, activeDay.id]);
+                }
+            };
+
+            const handleNavigate = (target, dayData = null) => {
+                if (target === 'home') {
+                    setView('home');
+                } else if (target === 'day' && dayData) {
+                    setActiveDay(dayData);
+                    setView('day');
+                } else {
+                    // Implicit navigation from dashboard cards (dayData passed directly)
+                    if (target.id) {
+                         setActiveDay(target);
+                         setView('day');
+                    }
+                }
+            };
+
+            useEffect(() => {
+                setActiveTab('learn');
+                const main = document.querySelector('main');
+                if (main) main.scrollTo(0,0);
+            }, [activeDay]);
+
+            return (
+                <div className="flex min-h-screen overflow-hidden bg-slate-950">
+                    
+                    {/* Menu Button - Show when sidebar is closed */}
+                    {!isSidebarOpen && (
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="fixed top-4 left-4 z-40 bg-slate-800 p-2 rounded-lg text-white shadow-lg border border-slate-700 hover:bg-slate-700 transition-colors"
+                            title="Open Menu"
+                        >
+                            <Icons.Menu size={24} />
+                        </button>
+                    )}
+
+                    {/* Home Button - Top Right Corner */}
+                    <button 
+                        onClick={() => handleNavigate('home')}
+                        className="fixed top-4 right-4 z-40 bg-blue-600 p-2 px-4 rounded-lg text-white shadow-lg border border-blue-500 hover:bg-blue-500 transition-colors flex items-center gap-2 font-semibold"
+                    >
+                        <Icons.Home size={20} />
+                        <span className="hidden md:inline">Dashboard</span>
+                    </button>
+
+                    <Navigation 
+                        activeDay={activeDay} 
+                        view={view}
+                        onNavigate={handleNavigate}
+                        isSidebarOpen={isSidebarOpen}
+                        toggleSidebar={toggleSidebar}
+                        completedDays={completedDays}
+                    />
+
+                    <main className={`flex-1 p-4 md:p-12 overflow-y-auto h-screen scroll-smooth transition-all duration-300 ${isSidebarOpen ? 'md:ml-64' : ''}`}>
+                        {view === 'home' ? (
+                            <HomeDashboard 
+                                curriculumData={curriculumData}
+                                completedDays={completedDays}
+                                onNavigate={handleNavigate}
+                            />
+                        ) : (
+                            <MainContent 
+                                day={activeDay} 
+                                activeTab={activeTab} 
+                                setActiveTab={setActiveTab}
+                                isCompleted={completedDays.includes(activeDay.id)}
+                                onToggleCompletion={toggleCompletion} 
+                            />
+                        )}
+                        <div className="mt-20 pt-8 border-t border-slate-800 text-center text-slate-600 text-sm pb-8">
+                            <p>© 2024 QA Master Learning Path. Built with Gemini & React.</p>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
